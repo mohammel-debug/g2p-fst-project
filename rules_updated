@@ -1,0 +1,133 @@
+# Rules
+
+## 1. Consonants
+
+fsts['rule_pre'] = FST.re("$^rewrite('ˈ':'' | 'ˌ':'')") #accent removing
+
+#Spanish does not have voiced stops/fricatives at the end of syllables
+fsts['rule_v_end'] = FST.re("$^rewrite(v:f / _ #)")  # THIS MUAT BE BEFORE THE RULE, OTHERWISE IT WONT WORK
+fsts['rule_g_end'] = FST.re("$^rewrite(ɡ:k / _ #)")  # bag, bak not working...now yes- the problem was this: g instead of ɡ.
+
+fsts['rule_v'] = FST.re("$^rewrite(v:b)")  #verb, berb
+fsts['rule_w'] = FST.re("$^rewrite(w:(gu))")  #win, guin
+fsts['rule_h'] = FST.re("$^rewrite(h:x)")  #heavy, jeby/hello,jelo
+fsts['rule_ŋ'] = FST.re("$^rewrite(ŋ:n)")  #sing, sin
+fsts['rule_j'] = FST.re("$^rewrite(j:ʝ)")  #you, ju / yes,jes / yellow,jelow
+fsts['rule_z'] = FST.re("$^rewrite(z:s)")  #lazy, leisi
+fsts['rule_ʒ'] = FST.re("$^rewrite(ʒ:ʃ)")  #leasure, lisher
+fsts['rule_ɹ'] = FST.re("$^rewrite(ɹ:ɾ)") #rabbit, ɾ is more natural just to avoid being exagerated, each time we come across a normal "r".
+#we can use other symbol for r when dealing with long vowels as to avoid confusion.
+# in cases like part, we don't say pa:t but paRt. I don't know if this is the way to put it though
+
+# Rule for 's' at the beginning of a word, followed by a consonant
+fsts['C'] = FST.re("b|c|d|f|g|h|j|k|l|m|n|p|q|r|s|t|v|w|x|y|z")
+fsts['rule_s'] = FST.re("$^rewrite(s:(es) / # _ $C)", fsts)  #school
+
+fsts['rule_ð'] = FST.re("$^rewrite(ð:d)")  #that, dat / father, fader
+fsts['rule_θ'] = FST.re("$^rewrite(θ:t)")  # thought, tot
+
+consonants_grammar = FST.re("$rule_pre @ $rule_v_end @ $rule_g_end @ $rule_v @ $rule_w @ "
+                            "$rule_h @ $rule_ŋ @ $rule_j @ $rule_z @ "
+                            "$rule_ʒ @ $rule_ɹ @ $rule_s @ $rule_ð @ $rule_θ", fsts)
+
+consonants_fst = lexicon_for_composition @ consonants_grammar
+
+consonants_test = ['that', 'thought', 'give', 'verb', 'win', 'hello',
+                  'sing', 'you', 'lazy', 'pleasure', 'club', 'bag',
+                   'school', 'rabbit']
+
+for word in consonants_test:
+    original_ipa = list(original_lexicon.generate(word))
+    transformed_ipa = list(consonants_fst.generate(word))
+    print(f"Word: {word}")
+    print(f"Original IPA: {original_ipa}")
+    print(f"Transformed: {transformed_ipa}")
+    print("\n")
+
+## 2. Diphthongs
+
+fsts['rule_əʊ'] = FST.re("$^rewrite(ə:o / _ ʊ) @ $^rewrite(ʊ:u / o _)")
+fsts['rule_eɪ'] = FST.re("$^rewrite(e:e / _ ɪ) @ $^rewrite(ɪ:i / e _)")
+fsts['rule_oʊ'] = FST.re("$^rewrite(o:o / _ ʊ) @ $^rewrite(ʊ:u / o_)")
+fsts['rule_aɪ'] = FST.re("$^rewrite(a:a / _ ɪ) @ $^rewrite(ɪ:i / a _)")
+fsts['rule_aʊ'] = FST.re("$^rewrite(a:a / _ ʊ) @ $^rewrite(ʊ:u / a _)")
+fsts['rule_ɔɪ'] = FST.re("$^rewrite(ɔ:o / _ ɪ) @ $^rewrite(ɪ:i / o _)")
+fsts['rule_ʊə'] = FST.re("$^rewrite(ʊ:u / _ ə) @ $^rewrite(ə:o / u _)")
+fsts['rule_eə'] = FST.re("$^rewrite(e:e / _ ə) @ $^rewrite(ə:a / e _)")
+
+
+diphthongs_grammar = FST.re("$rule_əʊ @ $rule_eɪ @ $rule_oʊ @ $rule_aɪ @ "
+                            "$rule_aʊ @ $rule_ɔɪ @ $rule_ʊə @ $rule_eə", fsts)
+
+diphthongs_fst = lexicon_for_composition @ diphthongs_grammar
+
+diphthongs_test = ['go', 'day', 'home', 'time', 'about', 'noise', 'hour', 'here']
+
+for word in diphthongs_test:
+    original_ipa = list(original_lexicon.generate(word))
+    transformed_ipa = list(diphthongs_fst.generate(word))
+    print(f"Word: {word}")
+    print(f"Original IPA: {original_ipa}")
+    print(f"Transformed: {transformed_ipa}")
+    print("\n")
+
+'''Word: hour
+Original IPA: ['ˈaʊə']
+Transformed: ['auo']
+'''
+
+## 3. Vowels
+
+fsts['rule_æ'] = FST.re("$^rewrite(æ:a)")  # cat, cat
+fsts['rule_ʌ'] = FST.re("$^rewrite(ʌ:a)")  # cup, cop I believe this is more /a/ than /o/
+fsts['rule_ɒ'] = FST.re("$^rewrite(ɒ:o)") #hot or dog
+fsts['rule_uː'] = FST.re("$^rewrite((uː):u)")  # you, ju
+fsts['rule_ɔː'] = FST.re("$^rewrite((ɔː):o)")  # thought, tot
+
+
+vowels_grammar = FST.re("$rule_æ @ $rule_ʌ @ $rule_ɒ @"
+                        "$rule_uː @ $rule_ɔː", fsts)
+
+
+vowels_fst = lexicon_for_composition @ vowels_grammar
+
+vowels_test = ['shit', 'cat', 'cup', 'hot', 'full', 'you', 'thought']
+
+for word in vowels_test:
+    original_ipa = list(original_lexicon.generate(word))
+    transformed_ipa = list(vowels_fst.generate(word))
+    print(f"Word: {word}")
+    print(f"Original IPA: {original_ipa}")
+    print(f"Transformed: {transformed_ipa}")
+    print("\n")
+
+## Testing the Composition of All Rules
+
+fst_1 = lexicon_for_composition @ consonants_grammar @ diphthongs_grammar @ vowels_grammar
+
+test_sample = ipa_dict_en_uk.sample(n=500, random_state=49) # I changed random_state to 49 instead of 42 just to avoid "antidisestablishmentarianism" word.
+#using the same dataset. We can use a different one later
+
+results = []
+
+for word in test_sample['word']:
+    try:
+        ipa_list = list(original_lexicon.generate(word))
+        ipa = ipa_list[0] if ipa_list else "N/A"
+
+        transformed_list = list(fst_1.generate(word))
+        transformed = transformed_list[0] if transformed_list else "N/A"
+
+        results.append({'word': word, 'ipa': ipa, 'transformed': transformed})
+
+    except Exception as e:
+        continue
+
+results_df = pd.DataFrame(results)
+
+results_df.head(10)
+
+
+Note that we made no distinction between `i` and `I`, and I do not think we have to because it is not ambiguous and it is readable; but if we add it, it is gonna affect other rules and we do not want that. 
+
+As the basic rules now are created, the next step would be adding more sophisticated rules such as `shwa`, `long vowels`, and `rs`, in order to sound more *Spanish* 
