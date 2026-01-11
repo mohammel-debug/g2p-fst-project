@@ -1,0 +1,28 @@
+## 5. "R" Insertion 
+
+fsts['rule_insert_r_final_ɑː'] = FST.re("$^rewrite((ɑː):(ɑr) / _ #)") 
+fsts['rule_insert_r_final_ɔː'] = FST.re("$^rewrite((ɔː):(ɔr) / _ #)") 
+fsts['rule_insert_r_final_ɜː'] = FST.re("$^rewrite((ɜː):(ɜr) / _ #)")   
+fsts['rule_insert_r_final_ɐ'] = FST.re("$^rewrite(ɐ:(ɐr) / _ #)")
+fsts['rule_insert_r_final_ə'] = FST.re("$^rewrite(ə:(ər) / _ #)")   
+
+
+grammar_r_insertion= FST.re(
+    "$rule_insert_r_final_ɑː @ $rule_insert_r_final_ɔː @ $rule_insert_r_final_ɜː @  $rule_insert_r_final_ɐ @ $rule_insert_r_final_ə", fsts)
+
+r_assertion_grammar = lexicon_for_composition @ grammar_r_insertion
+
+list(r_assertion_grammar.generate('colour'))
+
+fst_1 = lexicon_for_composition @ consonants_grammar  @ r_assertion_grammar @ diphthongs_grammar @ vowels_grammar @ grammar_shwa
+
+vowels_test = ['father', 'teacher', 'colour', 'car', 'clearer', 'greater', 'bigger',
+               'preacher', 'door', 'more', 'her', 'sir']
+
+for word in vowels_test:
+    original_ipa = list(original_lexicon.generate(word))
+    transformed_ipa = list(fst_1.generate(word))
+    print(f"Word: {word}")
+    print(f"Original IPA: {original_ipa}")
+    print(f"Transformed: {transformed_ipa}")
+    print("\n")
