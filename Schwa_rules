@@ -1,0 +1,2 @@
+fsts['rule_ə_final_n'] = FST.re("$^rewrite(ə:e / _ n #)")  # happen, hapen
+fsts['rule_able'] = FST.re("$^rewrite(ə:o / b _ l #)")
