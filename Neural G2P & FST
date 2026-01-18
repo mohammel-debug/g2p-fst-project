@@ -1,0 +1,100 @@
+# Step 1: Install pyfoma (if not already installed)
+!pip install pyfoma
+
+# Step 2: Download the EZTransformer module
+!wget https://raw.githubusercontent.com/mhulden/eztransformer/refs/heads/main/eztr.py
+
+# Step 3: Load the lexicon data
+!wget -O wordlist_ipa.txt https://raw.githubusercontent.com/mohammel-debug/G2P-Enlgish/main/Wordlist%20with%20IPA%20transcripion
+
+import pandas as pd
+
+wordlist_df = pd.read_csv("wordlist_ipa.txt", sep=",")
+
+lexicon = []
+with open("wordlist_ipa.txt", encoding="utf-8") as f:
+    next(f)
+    for line in f:
+        parts = line.strip().split(',')
+        if len(parts) == 2:
+            word = parts[0].strip()
+            ipa = parts[1].strip().strip("/")
+            lexicon.append((word, ipa))
+
+print(f"Loaded {len(lexicon)} word-IPA pairs")
+print("Sample entries:", lexicon[:3])
+
+# Step 4: Create the FSTs
+# Make sure you've run all the FST creation code before this step
+# This includes: consonants_grammar, diphthongs_grammar, vowels_grammar, grammar_schwa, grammar_r_insertion
+
+from pyfoma import FST
+
+# Recreate the FSTs if needed
+fsts = {}
+original_lexicon = FST.from_strings(lexicon)
+lexicon_for_composition = FST.from_strings(lexicon)
+
+# Then define all your rules and create fst_1
+# (You should already have this from your previous code)
+# fst_1 = lexicon_for_composition @ consonants_grammar @ diphthongs_grammar @ vowels_grammar @ grammar_schwa @ grammar_r_insertion
+
+# Step 5: Now create the neural training data
+from eztr import EZTransformer
+import pickle
+from random import shuffle
+
+neural_train_data = []
+for word, ipa in lexicon:
+    # Get the Spanish-transformed IPA from our FST
+    transformed = list(fst_1.generate(word))
+    if transformed:
+        # Format: space-separated input and output
+        input_seq = ' '.join(list(ipa))
+        output_seq = ' '.join(list(transformed[0]))
+        neural_train_data.append((input_seq, output_seq))
+
+print(f"\nCreated {len(neural_train_data)} training examples")
+
+# Step 6: Split into train/validation (90/10)
+shuffle(neural_train_data)
+split_idx = int(len(neural_train_data) * 0.9)
+train_data = neural_train_data[:split_idx]
+valid_data = neural_train_data[split_idx:]
+
+print(f"Training samples: {len(train_data)}")
+print(f"Validation samples: {len(valid_data)}")
+
+# Show example format
+print("\nExample training data format:")
+if train_data:
+    print(f"Input:  {train_data[0][0]}")
+    print(f"Output: {train_data[0][1]}")
+
+# Step 7: Initialize and train the model
+trf = EZTransformer(device='cuda')  # Use 'cpu' if no GPU available
+trf.fit(train_data, valid_data=valid_data, print_validation_examples=2, max_epochs=150)
+
+# Step 8: Test predictions
+# Manually providing IPA for words NOT in the lexicon to test generalization
+test_data = [
+    ('tower', 't a ʊ ə'),
+    ('vest',  'v e s t'),
+    ('snake', 's n e ɪ k'),
+    ('brave', 'b r e ɪ v')
+]
+
+print("\n=== Testing Generalization on Unseen Words ===")
+for word, ipa in test_data:
+    # Predict using the manual IPA string (must be space-separated)
+    prediction = trf.predict([ipa])
+
+    print(f"\nWord:      {word}")
+    print(f"Input IPA: {ipa}")
+    print(f"Predicted: {prediction[0]}")
+
+    # Logic Check:
+    # 'tower' should look like 't a u o' (following the pattern of 'power')
+    # 'vest'  should look like 'b e s t' (following the pattern of 'visit')
+
+
